@@ -1036,6 +1036,14 @@ function gen_config(var)
 			end
 			-- new urltest
 			local ut_nodes = _node.urltest_node
+			-- Handle both table (UCI list) and string (space-separated) formats
+			if type(ut_nodes) == "string" then
+				local nodes_list = {}
+				for node_id in ut_nodes:gmatch("[^%s]+") do
+					table.insert(nodes_list, node_id)
+				end
+				ut_nodes = nodes_list
+			end
 			local valid_nodes = {}
 			for i = 1, #ut_nodes do
 				local ut_node_id = ut_nodes[i]

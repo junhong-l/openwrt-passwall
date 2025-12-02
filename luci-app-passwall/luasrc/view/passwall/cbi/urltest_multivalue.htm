@@ -1,0 +1,124 @@
+<%#
+ Copyright 2024 passwall
+-%>
+<%+cbi/valueheader%>
+<%
+local cbid = "cbid." .. self.config .. "." .. section .. "." .. self.option
+
+local l = { }
+for k, v in pairs(self.vallist) do
+	l[v] = self.keylist[k]
+end
+
+-- 获取已选中的值
+local selected = {}
+local cval = self:cfgvalue(section)
+if type(cval) == "table" then
+	for k, v in pairs(cval) do
+		if type(k) == "string" then
+			selected[k] = true
+		elseif type(v) == "string" then
+			selected[v] = true
+		end
+	end
+elseif type(cval) == "string" then
+	for v in cval:gmatch("[^%s]+") do
+		selected[v] = true
+	end
+end
+%>
+		<div id="cbi-<%=self.config%>-<%=section%>-<%=self.option%>-urltest-container" style="width: 100%;">
+			<input type="text" id="urltest_node_search_<%=self.option%>" class="urltest-search-input" placeholder="<%:Search nodes...%>" oninput="filterUrltestNodes_<%=self.option%>(this.value)" style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+			<div class="urltest-checkbox-container" style="display: flex; flex-wrap: wrap; gap: 8px 20px; max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 5px; background: #fafafa;">
+			<%
+			for i, key in pairs(self.keylist) do
+				local j = tostring(i)
+				local label = self.vallist[i] or key
+				local is_checked = selected[key]
+			%>
+				<label style="display: inline-flex; align-items: center; min-width: 220px; white-space: nowrap; padding: 2px 0; cursor: pointer;" data-node-name="<%=pcdata(label):lower()%>">
+					<input type="checkbox" class="cbi-input-checkbox" onclick="cbi_d_update(this.id)" onchange="cbi_d_update(this.id)" style="margin: 0; vertical-align: middle;"<%=
+						attr("id", cbid .. "." .. key) ..
+						attr("name", cbid) ..
+						attr("value", key) ..
+						ifattr(is_checked, "checked", "checked")
+					%> /><span style="margin-left: 6px; vertical-align: middle;"><%=pcdata(label)%></span>
+				</label>
+			<% end %>
+			</div>
+			<div style="margin-top: 8px; display: flex; gap: 10px;">
+				<button type="button" class="cbi-button cbi-button-neutral" onclick="selectAllUrltestNodes_<%=self.option%>(true)"><%:Select all%></button>
+				<button type="button" class="cbi-button cbi-button-neutral" onclick="selectAllUrltestNodes_<%=self.option%>(false)"><%:DeSelect all%></button>
+				<span id="urltest_node_count_<%=self.option%>" style="line-height: 30px; margin-left: 10px; color: #666;"></span>
+			</div>
+		</div>
+<%+cbi/valuefooter%>
+<script type="text/javascript">
+//<![CDATA[
+(function() {
+	var containerId = 'cbi-<%=self.config%>-<%=section%>-<%=self.option%>-urltest-container';
+	var option = '<%=self.option%>';
+	
+	window['filterUrltestNodes_' + option] = function(keyword) {
+		var container = document.getElementById(containerId);
+		if (!container) return;
+		var labels = container.querySelectorAll('.urltest-checkbox-container label');
+		keyword = keyword.toLowerCase().trim();
+		var visibleCount = 0;
+		labels.forEach(function(label) {
+			var nodeName = label.getAttribute('data-node-name') || '';
+			if (keyword === '' || nodeName.indexOf(keyword) !== -1) {
+				label.style.display = '';
+				visibleCount++;
+			} else {
+				label.style.display = 'none';
+			}
+		});
+		updateCount();
+	};
+	
+	window['selectAllUrltestNodes_' + option] = function(checked) {
+		var container = document.getElementById(containerId);
+		if (!container) return;
+		var labels = container.querySelectorAll('.urltest-checkbox-container label');
+		labels.forEach(function(label) {
+			if (label.style.display !== 'none') {
+				var checkbox = label.querySelector('input[type="checkbox"]');
+				if (checkbox) {
+					checkbox.checked = checked;
+				}
+			}
+		});
+		updateCount();
+	};
+	
+	function updateCount() {
+		var container = document.getElementById(containerId);
+		if (!container) return;
+		var checkboxes = container.querySelectorAll('.urltest-checkbox-container input[type="checkbox"]');
+		var total = checkboxes.length;
+		var checked = 0;
+		checkboxes.forEach(function(cb) {
+			if (cb.checked) checked++;
+		});
+		var countSpan = document.getElementById('urltest_node_count_' + option);
+		if (countSpan) {
+			countSpan.textContent = '<%:Selected%>: ' + checked + ' / ' + total;
+		}
+	}
+	
+	// 初始化计数
+	setTimeout(updateCount, 100);
+	
+	// 监听复选框变化
+	var container = document.getElementById(containerId);
+	if (container) {
+		container.addEventListener('change', function(e) {
+			if (e.target.type === 'checkbox') {
+				updateCount();
+			}
+		});
+	}
+})();
+//]]>
+</script>
